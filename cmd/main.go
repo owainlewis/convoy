@@ -4,10 +4,13 @@ import (
 	"flag"
 
 	"github.com/golang/glog"
+	"github.com/owainlewis/convoy/pkg/controller"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 var config = flag.String("config", "", "Path to a kubeconfig file")
@@ -20,9 +23,17 @@ func main() {
 
 	glog.Info("Running controller")
 
-	client, err := buildClient(*config)
+	clientset, err := buildClient(*config)
 
-	pods, err := client.CoreV1().Pods("").List(metav1.ListOptions{})
+	if err != nil {
+		glog.Errorf("Failed to build clientset: %s", err)
+		return
+	}
+
+	controller.NewConvoyController(clientset)
+
+	pods, err := clientset.CoreV1().Pods("default").List(metav1.ListOptions{})
+
 	if err != nil {
 		glog.Errorf("Failed to retrieve pods: %v", err)
 		return
