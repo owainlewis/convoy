@@ -2,7 +2,7 @@ all: build
 
 .PHONY: build
 build:
-	go build cmd/main.go
+	@go build cmd/main.go
 
 .PHONY: run
 run:
