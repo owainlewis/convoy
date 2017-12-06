@@ -29,7 +29,12 @@ func main() {
 		return
 	}
 
-	controller.NewConvoyController(clientset)
+	ctrl := controller.NewConvoyController(clientset)
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
+	ctrl.Run(stopCh)
 
 	// pods, err := clientset.CoreV1().Pods("default").List(metav1.ListOptions{})
 

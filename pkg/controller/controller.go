@@ -24,7 +24,7 @@ type ConvoyController struct {
 	podLister lister_v1.PodLister
 }
 
-// NewConvoyController instantiates a new Convoy controller
+// NewConvoyController creates a new Convoy controller
 func NewConvoyController(client kubernetes.Interface) *ConvoyController {
 
 	namespace := "default"
@@ -47,7 +47,12 @@ func NewConvoyController(client kubernetes.Interface) *ConvoyController {
 		10*time.Second,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				glog.Info("Added object")
+				glog.Infof("Adding item to queue: %s", obj)
+
+				if key, err := cache.MetaNamespaceKeyFunc(obj); err == nil {
+					ctrl.queue.Add(key)
+				}
+
 			},
 			UpdateFunc: func(old, new interface{}) {
 				glog.Info("Updated object")
