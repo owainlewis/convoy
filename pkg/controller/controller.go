@@ -43,14 +43,8 @@ func NewConvoyController(client kubernetes.Interface) *ConvoyController {
 				return client.Core().Pods(namespace).Watch(lo)
 			},
 		},
-		// The types of objects this informer will return
 		&v1.Pod{},
-		// The resync period of this object. This will force a re-queue of all cached objects at this interval.
-		// Every object will trigger the `Updatefunc` even if there have been no actual updates triggered.
-		// In some cases you can set this to a very high interval - as you can assume you will see periodic updates in normal operation.
-		// The interval is set low here for demo purposes.
 		10*time.Second,
-		// Callback Functions to trigger on add/update/delete
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				glog.Info("Added object")
@@ -77,13 +71,11 @@ func (c *ConvoyController) Run(stopCh chan struct{}) {
 
 	go c.informer.Run(stopCh)
 
-	// Wait for all caches to be synced, before processing items from the queue is started
 	if !cache.WaitForCacheSync(stopCh, c.informer.HasSynced) {
 		glog.Error(fmt.Errorf("Timed out waiting for caches to sync"))
 		return
 	}
 
-	// Launching additional goroutines would parallelize workers consuming from the queue (but we don't really need this)
 	go wait.Until(c.runWorker, time.Second, stopCh)
 
 	<-stopCh
@@ -101,9 +93,7 @@ func (c *ConvoyController) processNext() bool {
 	if shutdown {
 		return false
 	}
-	// Tell the queue that we are done with processing this key. This unblocks the key for other workers
-	// This allows safe parallel processing because two pods with the same key are never processed in
-	// parallel.
+
 	defer c.queue.Done(key)
 
 	// Process the item. TODO handle errors in processing item
