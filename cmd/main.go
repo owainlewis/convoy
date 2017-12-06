@@ -5,7 +5,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/owainlewis/convoy/pkg/controller"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -32,16 +31,16 @@ func main() {
 
 	controller.NewConvoyController(clientset)
 
-	pods, err := clientset.CoreV1().Pods("default").List(metav1.ListOptions{})
+	// pods, err := clientset.CoreV1().Pods("default").List(metav1.ListOptions{})
 
-	if err != nil {
-		glog.Errorf("Failed to retrieve pods: %v", err)
-		return
-	}
+	// if err != nil {
+	// 	glog.Errorf("Failed to retrieve pods: %v", err)
+	// 	return
+	// }
 
-	for _, p := range pods.Items {
-		glog.V(3).Infof("Found pods: %s/%s", p.Namespace, p.Name)
-	}
+	// for _, p := range pods.Items {
+	// 	glog.V(3).Infof("Found pods: %s/%s", p.Namespace, p.Name)
+	// }
 }
 
 // Build a Kubernetes client.
