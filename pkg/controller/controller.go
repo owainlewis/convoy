@@ -1,112 +1,78 @@
 package controller
 
 import (
-	"fmt"
+	"log"
 	"time"
 
-	"github.com/golang/glog"
-
-	"k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
-	lister_v1 "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/util/workqueue"
+	glog "github.com/golang/glog"
+	v1 "k8s.io/api/core/v1"
+	wait "k8s.io/apimachinery/pkg/util/wait"
+	informercorev1 "k8s.io/client-go/informers/core/v1"
+	kubernetes "k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	listerv1 "k8s.io/client-go/listers/core/v1"
+	cache "k8s.io/client-go/tools/cache"
+	workqueue "k8s.io/client-go/util/workqueue"
 )
 
 type ConvoyController struct {
-	client    kubernetes.Interface
-	queue     workqueue.RateLimitingInterface
-	informer  cache.Controller
-	podLister lister_v1.PodLister
+	client            kubernetes.Interface
+	eventGetter       corev1.EventsGetter
+	eventLister       listerv1.EventLister
+	eventListerSynced cache.InformerSynced
+	queue             workqueue.RateLimitingInterface
 }
 
 // NewConvoyController creates a new Convoy controller
-func NewConvoyController(client kubernetes.Interface) *ConvoyController {
-
-	namespace := "default"
-
-	ctrl := &ConvoyController{
-		client: client,
-		queue:  workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+func NewConvoyController(client kubernetes.Interface, informer informercorev1.EventInformer) *ConvoyController {
+	c := &ConvoyController{
+		client:            client,
+		eventGetter:       client.CoreV1(),
+		eventLister:       informer.Lister(),
+		eventListerSynced: informer.Informer().HasSynced,
+		queue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 	}
 
-	indexer, informer := cache.NewIndexerInformer(
-		&cache.ListWatch{
-			ListFunc: func(lo meta_v1.ListOptions) (runtime.Object, error) {
-				return client.Core().Pods(namespace).List(lo)
-			},
-			WatchFunc: func(lo meta_v1.ListOptions) (watch.Interface, error) {
-				return client.Core().Pods(namespace).Watch(lo)
-			},
-		},
-		&v1.Pod{},
-		10*time.Second,
+	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				glog.Infof("Adding item to queue: %s", obj)
-
-				if key, err := cache.MetaNamespaceKeyFunc(obj); err == nil {
-					ctrl.queue.Add(key)
-				}
-
+				event := obj.(*v1.Event)
+				glog.Infof("New event %v", event.Message)
 			},
-			UpdateFunc: func(old, new interface{}) {
-				glog.Info("Updated object")
-			},
-			DeleteFunc: func(obj interface{}) {
-				glog.Info("Deleted object")
+			UpdateFunc: func(oldObj, newObj interface{}) {
+				event := newObj.(*v1.Event)
+				glog.Infof("Update event %v", event.Message)
 			},
 		},
-		cache.Indexers{},
 	)
 
-	ctrl.informer = informer
-	ctrl.podLister = lister_v1.NewPodLister(indexer)
-
-	return ctrl
+	return c
 }
 
 func (c *ConvoyController) Run(stopCh chan struct{}) {
+
 	defer c.queue.ShutDown()
-	glog.Info("Starting Controller")
 
-	go c.informer.Run(stopCh)
+	glog.Info("Starting controller")
 
-	if !cache.WaitForCacheSync(stopCh, c.informer.HasSynced) {
-		glog.Error(fmt.Errorf("Timed out waiting for caches to sync"))
+	glog.Info("Waiting for cache sync")
+	if !cache.WaitForCacheSync(stopCh, c.eventListerSynced) {
+		glog.Info("Timeout waiting for caches to sync")
 		return
 	}
+	log.Print("caches are synced")
 
 	go wait.Until(c.runWorker, time.Second, stopCh)
 
 	<-stopCh
-	glog.Info("Stopping Reboot Controller")
+	glog.Info("Stopping controller")
 }
 
 func (c *ConvoyController) runWorker() {
-	for c.processNext() {
+	for c.processNextWorkItem() {
 	}
 }
 
-func (c *ConvoyController) processNext() bool {
-	// Wait until there is a new item in the working queue
-	key, shutdown := c.queue.Get()
-	if shutdown {
-		return false
-	}
-
-	defer c.queue.Done(key)
-
-	// Process the item. TODO handle errors in processing item
-	c.process(key.(string))
+func (c *ConvoyController) processNextWorkItem() bool {
 	return true
-}
-
-func (c *ConvoyController) process(key string) error {
-	glog.Info("Processing item from work queue")
-	return nil
 }

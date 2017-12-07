@@ -2,50 +2,42 @@ package main
 
 import (
 	"flag"
+	"time"
 
-	"github.com/golang/glog"
-	"github.com/owainlewis/convoy/pkg/controller"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	glog "github.com/golang/glog"
+	controller "github.com/owainlewis/convoy/pkg/controller"
+	informers "k8s.io/client-go/informers"
+	kubernetes "k8s.io/client-go/kubernetes"
+	rest "k8s.io/client-go/rest"
+	clientcmd "k8s.io/client-go/tools/clientcmd"
 )
 
 var config = flag.String("config", "", "Path to a kubeconfig file")
 
 func main() {
-	// send logs to stderr so we can use 'kubectl logs'
 	flag.Set("logtostderr", "true")
-	flag.Set("v", "3")
+	flag.Set("v", "4")
 	flag.Parse()
 
 	glog.Info("Running controller")
 
-	clientset, err := buildClient(*config)
+	client, err := buildClient(*config)
 
 	if err != nil {
 		glog.Errorf("Failed to build clientset: %s", err)
 		return
 	}
 
-	ctrl := controller.NewConvoyController(clientset)
+	sharedInformers := informers.NewSharedInformerFactory(client, 10*time.Minute)
+
+	ctrl := controller.NewConvoyController(client, sharedInformers.Core().V1().Events())
 
 	stopCh := make(chan struct{})
+
 	defer close(stopCh)
 
+	sharedInformers.Start(stopCh)
 	ctrl.Run(stopCh)
-
-	// pods, err := clientset.CoreV1().Pods("default").List(metav1.ListOptions{})
-
-	// if err != nil {
-	// 	glog.Errorf("Failed to retrieve pods: %v", err)
-	// 	return
-	// }
-
-	// for _, p := range pods.Items {
-	// 	glog.V(3).Infof("Found pods: %s/%s", p.Namespace, p.Name)
-	// }
 }
 
 // Build a Kubernetes client.
