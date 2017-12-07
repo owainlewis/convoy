@@ -9,6 +9,7 @@ import (
 	notifier "github.com/owainlewis/convoy/pkg/notifier"
 	v1 "k8s.io/api/core/v1"
 	errors "k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/util/runtime"
 	wait "k8s.io/apimachinery/pkg/util/wait"
 	informercorev1 "k8s.io/client-go/informers/core/v1"
@@ -165,10 +166,15 @@ func (c *ConvoyController) syncHandler(key string) error {
 
 func (c *ConvoyController) processEvent(event *v1.Event) {
 	if event.InvolvedObject.Kind == ConvoyEventType {
-		c.notifier.Dispatch(event)
-		//now := meta_v1.Now()
-		//if !event.FirstTimestamp.Before(&now) {
-		// glog.Infof("Processing %s event %s", event.InvolvedObject.Kind, event.Message)
-		//}
+
+		eventCreated := event.CreationTimestamp
+		now := meta_v1.Now()
+		// We want to ensure that only new events are dispatched
+		// else we'll end up spamming the notifiers with old events
+		if eventCreated.Unix() >= now.Unix() {
+			c.notifier.Dispatch(event)
+		} else {
+			glog.V(4).Info("Stale event %v", event)
+		}
 	}
 }

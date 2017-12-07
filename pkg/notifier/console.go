@@ -16,5 +16,5 @@ func NewConsoleNotifier() *ConsoleNotifier {
 
 // Dispatch will write a Kubernetes Event to the console
 func (n *ConsoleNotifier) Dispatch(event *v1.Event) {
-	glog.Infof("Event: %v", event)
+	glog.Infof("%s: %v", event.InvolvedObject.Kind, event.Message)
 }
