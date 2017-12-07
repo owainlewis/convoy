@@ -32,7 +32,8 @@ func main() {
 	sharedInformers := informers.NewSharedInformerFactory(client, 10*time.Minute)
 	notifier := notifier.NewConsoleNotifier()
 
-	ctrl := controller.NewConvoyController(client,
+	ctrl := controller.NewConvoyController(
+		client,
 		sharedInformers.Core().V1().Events(),
 		notifier)
 
