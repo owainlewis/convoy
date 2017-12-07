@@ -6,8 +6,9 @@ import (
 	"time"
 
 	glog "github.com/golang/glog"
+	notifier "github.com/owainlewis/convoy/pkg/notifier"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	errors "k8s.io/apimachinery/pkg/api/errors"
 	runtime "k8s.io/apimachinery/pkg/util/runtime"
 	wait "k8s.io/apimachinery/pkg/util/wait"
 	informercorev1 "k8s.io/client-go/informers/core/v1"
@@ -19,25 +20,29 @@ import (
 )
 
 const (
+	// ConvoyEventType defines the type of event to watch
 	ConvoyEventType = "Pod"
 )
 
+// ConvoyController defines the structure of the controller
 type ConvoyController struct {
 	client            kubernetes.Interface
 	eventGetter       corev1.EventsGetter
 	eventLister       listerv1.EventLister
 	eventListerSynced cache.InformerSynced
 	queue             workqueue.RateLimitingInterface
+	notifier          notifier.Notifier
 }
 
 // NewConvoyController creates a new Convoy controller
-func NewConvoyController(client kubernetes.Interface, informer informercorev1.EventInformer) *ConvoyController {
+func NewConvoyController(client kubernetes.Interface, informer informercorev1.EventInformer, notifier notifier.Notifier) *ConvoyController {
 	c := &ConvoyController{
 		client:            client,
 		eventGetter:       client.CoreV1(),
 		eventLister:       informer.Lister(),
 		eventListerSynced: informer.Informer().HasSynced,
 		queue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		notifier:          notifier,
 	}
 
 	informer.Informer().AddEventHandler(
@@ -160,9 +165,10 @@ func (c *ConvoyController) syncHandler(key string) error {
 
 func (c *ConvoyController) processEvent(event *v1.Event) {
 	if event.InvolvedObject.Kind == ConvoyEventType {
+		c.notifier.Dispatch(event)
 		//now := meta_v1.Now()
 		//if !event.FirstTimestamp.Before(&now) {
-		glog.Infof("Processing %s event %s", event.InvolvedObject.Kind, event.Message)
+		// glog.Infof("Processing %s event %s", event.InvolvedObject.Kind, event.Message)
 		//}
 	}
 }

@@ -6,6 +6,7 @@ import (
 
 	glog "github.com/golang/glog"
 	controller "github.com/owainlewis/convoy/pkg/controller"
+	"github.com/owainlewis/convoy/pkg/notifier"
 	informers "k8s.io/client-go/informers"
 	kubernetes "k8s.io/client-go/kubernetes"
 	rest "k8s.io/client-go/rest"
@@ -29,8 +30,11 @@ func main() {
 	}
 
 	sharedInformers := informers.NewSharedInformerFactory(client, 10*time.Minute)
+	notifier := notifier.NewConsoleNotifier()
 
-	ctrl := controller.NewConvoyController(client, sharedInformers.Core().V1().Events())
+	ctrl := controller.NewConvoyController(client,
+		sharedInformers.Core().V1().Events(),
+		notifier)
 
 	stopCh := make(chan struct{})
 
