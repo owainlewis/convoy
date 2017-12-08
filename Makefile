@@ -6,4 +6,4 @@ build:
 
 .PHONY: run
 run:
-	@go run cmd/main.go --config=/Users/owainlewis/.kube/config --v=4
+	@go run cmd/main.go --config=/Users/owainlewis/.kube/config --v=4 --logtostderr=true

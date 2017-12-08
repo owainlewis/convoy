@@ -165,16 +165,16 @@ func (c *ConvoyController) syncHandler(key string) error {
 }
 
 func (c *ConvoyController) processEvent(event *v1.Event) {
-	if event.InvolvedObject.Kind == ConvoyEventType {
+	//if event.InvolvedObject.Kind == ConvoyEventType {
 
-		eventCreated := event.CreationTimestamp
-		now := meta_v1.Now()
-		// We want to ensure that only new events are dispatched
-		// else we'll end up spamming the notifiers with old events
-		if eventCreated.Unix() >= now.Unix() {
-			c.notifier.Dispatch(event)
-		} else {
-			glog.V(4).Info("Stale event %v", event)
-		}
+	eventCreated := event.CreationTimestamp
+	now := meta_v1.Now()
+	// We want to ensure that only new events are dispatched
+	// else we'll end up spamming the notifiers with old events
+	if eventCreated.Unix() >= now.Unix() {
+		c.notifier.Dispatch(event)
+	} else {
+		glog.V(4).Info("Stale event %v", event)
 	}
+	//}
 }

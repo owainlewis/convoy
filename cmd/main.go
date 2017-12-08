@@ -16,8 +16,7 @@ import (
 var config = flag.String("config", "", "Path to a kubeconfig file")
 
 func main() {
-	flag.Set("logtostderr", "true")
-	flag.Set("v", "4")
+
 	flag.Parse()
 
 	glog.Info("Running controller")
