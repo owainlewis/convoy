@@ -169,7 +169,10 @@ func (c *ConvoyController) processEvent(event *v1.Event) {
 	// We want to ensure that only new events are dispatched
 	// else we'll end up spamming the notifiers with old events
 	if !c.isStale(event) {
-		c.notifier.Dispatch(event)
+		err := c.notifier.Dispatch(event)
+		if err != nil {
+			glog.Error("Failed to dispatch message: %s", err)
+		}
 	}
 }
 

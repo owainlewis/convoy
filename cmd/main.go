@@ -2,11 +2,13 @@ package main
 
 import (
 	"flag"
+	"os"
 	"time"
 
 	glog "github.com/golang/glog"
+	slack "github.com/nlopes/slack"
 	controller "github.com/owainlewis/convoy/pkg/controller"
-	"github.com/owainlewis/convoy/pkg/notifier"
+	notifier "github.com/owainlewis/convoy/pkg/notifier"
 	informers "k8s.io/client-go/informers"
 	kubernetes "k8s.io/client-go/kubernetes"
 	rest "k8s.io/client-go/rest"
@@ -29,7 +31,9 @@ func main() {
 	}
 
 	sharedInformers := informers.NewSharedInformerFactory(client, 10*time.Minute)
-	notifier := notifier.NewConsoleNotifier()
+
+	slk := slack.New(os.Getenv("SLACK_TOKEN"))
+	notifier := notifier.NewSlackNotifier(slk, "general")
 
 	ctrl := controller.NewConvoyController(
 		client,

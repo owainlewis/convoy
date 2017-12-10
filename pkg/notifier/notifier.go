@@ -5,5 +5,5 @@ import (
 )
 
 type Notifier interface {
-	Dispatch(event *v1.Event)
+	Dispatch(event *v1.Event) error
 }
