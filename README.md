@@ -11,6 +11,8 @@ these events to your team via a Slack channel.
 * Post Kubernetes events into Slack (or other)
 * Filter events (type, namespace etc)
 
+TODO take action on specific events (automation)
+
 ![Convoy](https://github.com/owainlewis/convoy/blob/master/convoy.png?raw=true)
 
 ## Roadmap
