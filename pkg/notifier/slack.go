@@ -1,6 +1,8 @@
 package notifier
 
 import (
+	"fmt"
+
 	slack "github.com/nlopes/slack"
 	v1 "k8s.io/api/core/v1"
 )
@@ -21,7 +23,11 @@ func NewSlackNotifier(client *slack.Client, channel string) *SlackNotifier {
 
 // Dispatch will send an event to Slack
 func (n *SlackNotifier) Dispatch(event *v1.Event) error {
-	params := slack.PostMessageParameters{}
-	_, _, err := n.Client.PostMessage("general", event.Message, params)
+	msg := formatEventMessageForSlack(event)
+	_, _, err := n.Client.PostMessage(n.Channel, msg, slack.PostMessageParameters{})
 	return err
+}
+
+func formatEventMessageForSlack(event *v1.Event) string {
+	return fmt.Sprintf("%s: %s", event.InvolvedObject.Kind, event.Message)
 }

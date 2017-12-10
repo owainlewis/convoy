@@ -32,8 +32,8 @@ func main() {
 
 	sharedInformers := informers.NewSharedInformerFactory(client, 10*time.Minute)
 
-	slk := slack.New(os.Getenv("SLACK_TOKEN"))
-	notifier := notifier.NewSlackNotifier(slk, "general")
+	slackClient := slack.New(os.Getenv("SLACK_TOKEN"))
+	notifier := notifier.NewSlackNotifier(slackClient, "convoyk8s")
 
 	ctrl := controller.NewConvoyController(
 		client,
