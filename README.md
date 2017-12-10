@@ -6,6 +6,11 @@ Convoy is a Kubernetes controller that can notify you about specific cluster eve
 For example if you want to watch all `Pod` events in a certain namespace then Convoy can dispatch
 these events to your team via a Slack channel.
 
+## Features
+
+* Post Kubernetes events into Slack (or other)
+* Filter events (type, namespace etc)
+
 ![Convoy](https://github.com/owainlewis/convoy/blob/master/convoy.png?raw=true)
 
 ## Roadmap
