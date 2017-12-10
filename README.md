@@ -1,6 +1,6 @@
 # Convoy
 
-> Convoy is a Kubernetes controller that allows your team to receive notifications about specific events in your cluster.
+### Convoy is a Kubernetes controller that allows your team to receive notifications about specific events in your cluster.
 
 Convoy is a Kubernetes controller that can notify you about specific cluster events.
 For example if you want to watch all `Pod` events in a certain namespace then Convoy can dispatch
