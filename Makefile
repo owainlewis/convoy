@@ -4,7 +4,10 @@ all: clean build
 
 .PHONY: build
 build:
-	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ${BIN} cmd/main.go
+	@GOOS=linux \
+	GOARCH=amd64 \
+	CGO_ENABLED=0 \
+	go build -o ${BIN} cmd/main.go
 
 .PHONY: clean
 clean:
@@ -12,7 +15,11 @@ clean:
 
 .PHONY: run
 run:
-	@go run cmd/main.go --config=config.yml --kubeconfig=/Users/owainlewis/.kube/config --v=4 --logtostderr=true
+	@go run cmd/main.go \
+	--config=config.yml \
+	--kubeconfig=${HOME}/.kube/config \
+	--v=4 \
+	--logtostderr=true
 
 .PHONY: test
 test:

@@ -11,19 +11,12 @@ type Filter struct {
 	Type string
 }
 
-// SlackConfig defines the configuration needed to auth with slack
-type SlackConfig struct {
-	// Should be moved into a secret
-	Token   string
-	Channel string
-}
-
 // Config defines the user level configuration options
 type Config struct {
-	Notifier struct {
-		Slack SlackConfig
+	Slack struct {
+		Enabled bool
+		Channel string
 	}
-	Filters []Filter
 }
 
 // FromFile will load controller configuration from a file path

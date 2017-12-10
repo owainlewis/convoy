@@ -1,15 +1,15 @@
-package notifier
+package dispatch
 
 import (
 	"github.com/golang/glog"
 	v1 "k8s.io/api/core/v1"
 )
 
-// ConsoleNotifier is a notifier that writes to the console
+// ConsoleNotifier is a dispatcher that writes to the console
 type ConsoleNotifier struct {
 }
 
-// NewConsoleNotifier instantiates a default console notifier
+// NewConsoleNotifier instantiates a default console dispatcher
 func NewConsoleNotifier() *ConsoleNotifier {
 	return &ConsoleNotifier{}
 }

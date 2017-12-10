@@ -1,6 +1,3 @@
-notifier:
-  slack:
-    token: XXX
-    channel: XXX
-filters:
-  kind: Pod
+slack:
+  enabled: true
+  channel: XXX

@@ -6,7 +6,8 @@ import (
 	"time"
 
 	glog "github.com/golang/glog"
-	notifier "github.com/owainlewis/convoy/pkg/notifier"
+	config "github.com/owainlewis/convoy/pkg/config"
+	dispatch "github.com/owainlewis/convoy/pkg/dispatch"
 	v1 "k8s.io/api/core/v1"
 	errors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,18 +33,24 @@ type ConvoyController struct {
 	eventLister       listerv1.EventLister
 	eventListerSynced cache.InformerSynced
 	queue             workqueue.RateLimitingInterface
-	notifier          notifier.Notifier
+	dispatch          dispatch.Notifier
+	config            config.Config
 }
 
 // NewConvoyController creates a new Convoy controller
-func NewConvoyController(client kubernetes.Interface, informer informercorev1.EventInformer, notifier notifier.Notifier) *ConvoyController {
+func NewConvoyController(
+	client kubernetes.Interface,
+	informer informercorev1.EventInformer,
+	dispatch dispatch.Notifier,
+	config config.Config) *ConvoyController {
 	c := &ConvoyController{
 		client:            client,
 		eventGetter:       client.CoreV1(),
 		eventLister:       informer.Lister(),
 		eventListerSynced: informer.Informer().HasSynced,
 		queue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		notifier:          notifier,
+		dispatch:          dispatch,
+		config:            config,
 	}
 
 	informer.Informer().AddEventHandler(
@@ -167,11 +174,11 @@ func (c *ConvoyController) syncHandler(key string) error {
 // TODO apply filters here (if event.InvolvedObject.Kind == ConvoyEventType)
 func (c *ConvoyController) processEvent(event *v1.Event) {
 	// We want to ensure that only new events are dispatched
-	// else we'll end up spamming the notifiers with old events
+	// else we'll end up spamming the dispatchs with old events
 	if !c.isStale(event) {
-		err := c.notifier.Dispatch(event)
+		err := c.dispatch.Dispatch(event)
 		if err != nil {
-			glog.Error("Failed to dispatch message: %s", err)
+			glog.Errorf("Failed to dispatch message: %s", err)
 		}
 	}
 }

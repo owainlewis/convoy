@@ -2,13 +2,13 @@ package main
 
 import (
 	"flag"
+	"os"
 	"time"
 
 	glog "github.com/golang/glog"
-	slack "github.com/nlopes/slack"
 	config "github.com/owainlewis/convoy/pkg/config"
 	controller "github.com/owainlewis/convoy/pkg/controller"
-	notifier "github.com/owainlewis/convoy/pkg/notifier"
+	dispatch "github.com/owainlewis/convoy/pkg/dispatch"
 	informers "k8s.io/client-go/informers"
 	kubernetes "k8s.io/client-go/kubernetes"
 	rest "k8s.io/client-go/rest"
@@ -21,7 +21,7 @@ var kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig file")
 func main() {
 	flag.Parse()
 
-	glog.Info("Running controller")
+	glog.Info("Starting controller")
 
 	client, err := buildClient(*kubeconfig)
 	if err != nil {
@@ -36,14 +36,13 @@ func main() {
 
 	sharedInformers := informers.NewSharedInformerFactory(client, 10*time.Minute)
 
-	slackClient := slack.New(c.Notifier.Slack.Token)
-
-	notifier := notifier.NewSlackNotifier(slackClient, "convoyk8s")
+	dispatcher := getDispatcher(*c)
 
 	ctrl := controller.NewConvoyController(
 		client,
 		sharedInformers.Core().V1().Events(),
-		notifier)
+		dispatcher,
+		*c)
 
 	stopCh := make(chan struct{})
 
@@ -67,6 +66,15 @@ func buildClient(conf string) (*kubernetes.Clientset, error) {
 	}
 
 	return client, nil
+}
+
+func getDispatcher(config config.Config) dispatch.Notifier {
+	if config.Slack.Enabled {
+		slackToken := os.Getenv("SLACK_TOKEN")
+		slackChannel := config.Slack.Channel
+		return dispatch.NewSlackNotifier(slackToken, slackChannel)
+	}
+	return dispatch.NewConsoleNotifier()
 }
 
 func getKubeConfig(kubeconfig string) (*rest.Config, error) {
