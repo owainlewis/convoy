@@ -12,9 +12,7 @@ filters:
 `
 
 func TestUnmarshallValidConfig(t *testing.T) {
-
 	conf, err := unmarshall([]byte(validConfig))
-
 	if err != nil {
 		t.Errorf("Expected valid config to be unmarshalled. Got %s", err)
 	}
