@@ -13,6 +13,7 @@ type Filter struct {
 
 // SlackConfig defines the configuration needed to auth with slack
 type SlackConfig struct {
+	// Should be moved into a secret
 	Token   string
 	Channel string
 }

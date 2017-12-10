@@ -2,11 +2,11 @@ package main
 
 import (
 	"flag"
-	"os"
 	"time"
 
 	glog "github.com/golang/glog"
 	slack "github.com/nlopes/slack"
+	config "github.com/owainlewis/convoy/pkg/config"
 	controller "github.com/owainlewis/convoy/pkg/controller"
 	notifier "github.com/owainlewis/convoy/pkg/notifier"
 	informers "k8s.io/client-go/informers"
@@ -15,24 +15,29 @@ import (
 	clientcmd "k8s.io/client-go/tools/clientcmd"
 )
 
-var config = flag.String("config", "", "Path to a kubeconfig file")
+var conf = flag.String("config", "", "Path to config YAML")
+var kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig file")
 
 func main() {
-
 	flag.Parse()
 
 	glog.Info("Running controller")
 
-	client, err := buildClient(*config)
-
+	client, err := buildClient(*kubeconfig)
 	if err != nil {
 		glog.Errorf("Failed to build clientset: %s", err)
 		return
 	}
 
+	c, err := getConfig(*conf)
+	if err != nil {
+		glog.Fatalf("Failed to load configuration %s", err)
+	}
+
 	sharedInformers := informers.NewSharedInformerFactory(client, 10*time.Minute)
 
-	slackClient := slack.New(os.Getenv("SLACK_TOKEN"))
+	slackClient := slack.New(c.Notifier.Slack.Token)
+
 	notifier := notifier.NewSlackNotifier(slackClient, "convoyk8s")
 
 	ctrl := controller.NewConvoyController(
@@ -51,7 +56,7 @@ func main() {
 // Build a Kubernetes client.
 // Use either local or cluster config depending on conf value
 func buildClient(conf string) (*kubernetes.Clientset, error) {
-	config, err := getConfig(conf)
+	config, err := getKubeConfig(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -64,10 +69,18 @@ func buildClient(conf string) (*kubernetes.Clientset, error) {
 	return client, nil
 }
 
-func getConfig(kubeconfig string) (*rest.Config, error) {
+func getKubeConfig(kubeconfig string) (*rest.Config, error) {
 	if kubeconfig != "" {
 		return clientcmd.BuildConfigFromFlags("", kubeconfig)
 	}
 
 	return rest.InClusterConfig()
+}
+
+func getConfig(conf string) (*config.Config, error) {
+	defaultConfigPath := "config.yml"
+	if conf == "" {
+		return config.FromFile(defaultConfigPath)
+	}
+	return config.FromFile(conf)
 }
