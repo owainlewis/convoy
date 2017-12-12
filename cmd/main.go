@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"net/http"
 	"os"
 	"time"
 
@@ -9,13 +10,17 @@ import (
 	config "github.com/owainlewis/convoy/pkg/config"
 	controller "github.com/owainlewis/convoy/pkg/controller"
 	dispatch "github.com/owainlewis/convoy/pkg/dispatch"
+	prometheus "github.com/prometheus/client_golang/prometheus"
 	informers "k8s.io/client-go/informers"
 	kubernetes "k8s.io/client-go/kubernetes"
 	rest "k8s.io/client-go/rest"
 	clientcmd "k8s.io/client-go/tools/clientcmd"
 )
 
+const listenAddr = "0.0.0.0:8080"
+
 var conf = flag.String("config", "", "Path to config YAML")
+
 var kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig file")
 
 func main() {
@@ -47,6 +52,10 @@ func main() {
 	stopCh := make(chan struct{})
 
 	defer close(stopCh)
+
+	// Start Prometheus metrics server
+	http.Handle("/metrics", prometheus.Handler())
+	go http.ListenAndServe(listenAddr, nil)
 
 	sharedInformers.Start(stopCh)
 	ctrl.Run(stopCh)

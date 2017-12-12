@@ -89,7 +89,9 @@ func (c *ConvoyController) enqueue(obj interface{}) {
 		runtime.HandleError(err)
 		return
 	}
+
 	c.queue.AddRateLimited(key)
+	eventsQueued.Inc()
 }
 
 func (c *ConvoyController) runWorker() {
@@ -176,6 +178,7 @@ func (c *ConvoyController) processEvent(event *v1.Event) {
 	// We want to ensure that only new events are dispatched
 	// else we'll end up spamming the dispatchs with old events
 	if !c.isStale(event) {
+		eventsProcessed.Inc()
 		err := c.dispatch.Dispatch(event)
 		if err != nil {
 			glog.Errorf("Failed to dispatch message: %s", err)
