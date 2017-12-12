@@ -5,7 +5,7 @@ build:
     - script:
         name: go build
         code: |
-          go build ./...
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o dist/convoy cmd/main.go
     - script:
         name: go test
         code: |
