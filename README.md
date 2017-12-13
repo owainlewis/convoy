@@ -13,4 +13,8 @@ these events to your team via a Slack channel.
 * Post Kubernetes events into Slack (or other)
 * Filter events (type, namespace etc)
 
+## Example
+
+An example Slack session showing Kubernetes events forwarded to Slack via Convoy 
+
 ![Convoy](https://github.com/owainlewis/convoy/blob/master/convoy.png?raw=true)
